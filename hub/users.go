@@ -7,14 +7,12 @@ type UserProvider interface {
 }
 
 type Users struct {
-	users           map[int32]struct{}
 	availableUserID int32
 	lock            sync.RWMutex
 }
 
 func NewUsers() *Users {
 	return &Users{
-		users:           make(map[int32]struct{}),
 		availableUserID: 1,
 	}
 }
@@ -22,7 +20,6 @@ func NewUsers() *Users {
 func (u *Users) AuthenticateNewUser() int32 {
 	u.lock.Lock()
 	id := u.availableUserID
-	u.users[u.availableUserID] = struct{}{}
 	u.availableUserID++
 	u.lock.Unlock()
 	return id
