@@ -92,7 +92,10 @@ func (c *Client) GetIdentity() (int32, error) {
 		return 0, fmt.Errorf("bad response, expected: %d, got %d", messages.MsgTypeIdentityResponse, msgRaw.msgType)
 	}
 	var idResp messages.IdentityResponse
-	proto.Unmarshal(msgRaw.msg, &idResp)
+	err = proto.Unmarshal(msgRaw.msg, &idResp)
+	if err != nil {
+		return 0, fmt.Errorf("unmarshal failed: %s", err.Error())
+	}
 
 	return idResp.Id, nil
 }
@@ -122,7 +125,10 @@ func (c *Client) ListUsers() ([]int32, error) {
 		return nil, fmt.Errorf("bad response, expected: %d, got %d", messages.MsgTypeListResponse, msgRaw.msgType)
 	}
 	var listResp messages.ListResponse
-	proto.Unmarshal(msgRaw.msg, &listResp)
+	err = proto.Unmarshal(msgRaw.msg, &listResp)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal failed: %s", err.Error())
+	}
 
 	return listResp.Ids, nil
 }
@@ -177,6 +183,10 @@ func (c *Client) receiveMessages() {
 func (c *Client) handleRelay(bytes []byte) {
 	// decode relay
 	var relay messages.Relay
-	proto.Unmarshal(bytes, &relay)
+	err := proto.Unmarshal(bytes, &relay)
+	if err != nil {
+		c.logger.Error("Unmarshal failed", zap.Error(err))
+		return
+	}
 	c.logger.Info("relay message", zap.ByteString("body", relay.Body))
 }

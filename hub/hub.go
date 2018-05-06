@@ -81,7 +81,11 @@ func (h *Hub) handleConnection(conn net.Conn) {
 func (h *Hub) handleRequest(conn net.Conn, bytes []byte, closeChan chan bool) {
 	// parse message
 	var request messages.Request
-	proto.Unmarshal(bytes, &request)
+	err := proto.Unmarshal(bytes, &request)
+	if err != nil {
+		h.logger.Error("unmarshal failed", zap.Error(err))
+		return
+	}
 
 	switch request.Type {
 	case messages.Request_IDENTITY:
@@ -158,7 +162,12 @@ func (h *Hub) listRequest(userID int32, conn net.Conn) {
 func (h *Hub) relayRequest(bytes []byte) {
 	// parse message
 	var request messages.RelayRequest
-	proto.Unmarshal(bytes, &request)
+	err := proto.Unmarshal(bytes, &request)
+	if err != nil {
+		h.logger.Error("unmarshal failed", zap.Error(err))
+		return
+	}
+
 	if len(request.Ids) == 0 {
 		return
 	}
@@ -176,7 +185,7 @@ func (h *Hub) relayRequest(bytes []byte) {
 	relay := &messages.Relay{
 		Body: body,
 	}
-	bytes, err := messages.Encode(relay, messages.MsgTypeRelay)
+	bytes, err = messages.Encode(relay, messages.MsgTypeRelay)
 	if err != nil {
 		panic(fmt.Sprintf("Relay marshalling failed, %s", err))
 	}

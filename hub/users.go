@@ -14,7 +14,8 @@ type Users struct {
 
 func NewUsers() *Users {
 	return &Users{
-		users: make(map[int32]struct{}),
+		users:           make(map[int32]struct{}),
+		availableUserID: 1,
 	}
 }
 
