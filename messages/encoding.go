@@ -14,7 +14,9 @@ type MsgType uint8
 const (
 	typeLen = 1
 	sizeLen = 4
+)
 
+const (
 	MsgTypeUnknown MsgType = iota
 	MsgTypeRequest
 	MsgTypeIdentityResponse

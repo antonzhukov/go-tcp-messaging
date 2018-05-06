@@ -48,3 +48,4 @@ messages asynchronously and don't know really if the received response
 is actually for our certain request. Though synchronous request send
 saves us from this issue. Multiplexing could be solved with
 streams, e.g. with: https://github.com/hashicorp/yamux
+2. Both client logging and CLI are using stdout for simplicity. 

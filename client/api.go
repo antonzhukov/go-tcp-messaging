@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
 
 type API struct {
@@ -48,6 +50,27 @@ func (a *API) Run() {
 				continue
 			}
 			fmt.Printf("active users=%v\n", ids)
+		case relay:
+			// collect user ids
+			fmt.Printf("Enter comma separated list of users to relay message to: ")
+			scanner.Scan()
+			usersStr := scanner.Text()
+			users := strings.Split(usersStr, ",")
+			userIds := make([]int32, 0, len(users))
+			for _, user := range users {
+				if id, err := strconv.Atoi(user); err == nil {
+					userIds = append(userIds, int32(id))
+				}
+			}
+
+			// read message
+			fmt.Printf("Enter message: ")
+			scanner.Scan()
+			msg := scanner.Text()
+
+			// relay message
+			fmt.Printf("sending msg='%s' to users=%s\n", msg, usersStr)
+			a.client.RelayRequest(userIds, []byte(msg))
 		case quit:
 			break
 		case help:
@@ -57,6 +80,8 @@ Client
 Usage:
 
 identity - authentify on hub (if not already authentified)
+list - show list of currently active users
+relay - relay message to selected users
 quit - quit the program
 help - show this help
 

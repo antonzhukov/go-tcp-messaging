@@ -14,11 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	bodyMaxLength = 1024 * 1024
-	maxReceivers  = 255
-)
-
 type Client struct {
 	conn           net.Conn
 	responseChan   chan messageRaw
@@ -68,6 +63,7 @@ func (c *Client) authenticate() error {
 	return nil
 }
 
+// GetIdentity passes authentication on hub
 func (c *Client) GetIdentity() (int32, error) {
 	// only authenticate once
 	if c.identified {
@@ -101,6 +97,7 @@ func (c *Client) GetIdentity() (int32, error) {
 	return idResp.Id, nil
 }
 
+// ListUsers returns list of currently active users
 func (c *Client) ListUsers() ([]int32, error) {
 	// send request
 	listReq := &messages.Request{
@@ -130,15 +127,36 @@ func (c *Client) ListUsers() ([]int32, error) {
 	return listResp.Ids, nil
 }
 
+// RelayRequest relays a message to other users
+func (c *Client) RelayRequest(ids []int32, body []byte) error {
+	if len(body) > messages.BodyMaxLength {
+		body = body[:messages.BodyMaxLength]
+	}
+
+	if len(ids) > messages.MaxReceivers {
+		ids = ids[:messages.MaxReceivers]
+	}
+	relayReq := &messages.RelayRequest{
+		Id:   c.id,
+		Ids:  ids,
+		Body: body,
+	}
+	bytes, err := messages.Encode(relayReq, messages.MsgTypeRelayRequest)
+	if err != nil {
+		return fmt.Errorf("request marshalling failed, %s", err.Error())
+	}
+	c.conn.Write(bytes)
+
+	return nil
+}
+
 func (c *Client) receiveMessages() {
 	bufReader := bufio.NewReader(c.conn)
 
 	for {
 		bytes, msgType, err := messages.Decode(bufReader)
-		c.logger.Info("received new message")
 		if err == io.EOF {
 			panic("connection lost")
-			break
 		}
 		if err != nil {
 			c.logger.Error("receiving message failed", zap.Error(err))

@@ -71,31 +71,36 @@ func (h *Hub) handleConnection(conn net.Conn) {
 			h.logger.Info("received unknown message, skipping")
 		case messages.MsgTypeRequest:
 			h.handleRequest(conn, bytes, closeChan)
+		case messages.MsgTypeRelayRequest:
+			h.logger.Info("new relay request")
+			h.relayRequest(bytes)
 		}
 	}
 }
 
 func (h *Hub) handleRequest(conn net.Conn, bytes []byte, closeChan chan bool) {
+	// parse message
 	var request messages.Request
 	proto.Unmarshal(bytes, &request)
 
 	switch request.Type {
 	case messages.Request_IDENTITY:
 		h.logger.Info("new identity request")
-		id, err := h.identityCommand(conn)
+		id, err := h.identityRequest(conn)
 		if err != nil {
-			h.logger.Error("identityCommand failed", zap.Error(err))
+			h.logger.Error("identityRequest failed", zap.Error(err))
 			break
 		}
 		// subscribe all authenticated users to relay events
 		go h.subscribeUser(id, conn, closeChan)
 	case messages.Request_LIST:
 		h.logger.Info("new list request")
-		h.listCommand(request.Id, conn)
+		h.listRequest(request.Id, conn)
 	}
 }
 
-func (h *Hub) identityCommand(conn net.Conn) (int32, error) {
+// identityRequest handles request and sends the response with id
+func (h *Hub) identityRequest(conn net.Conn) (int32, error) {
 	// authenticate user and handle connection
 	id := h.usersProvider.AuthenticateNewUser()
 	idResp := &messages.IdentityResponse{
@@ -126,8 +131,8 @@ func (h *Hub) subscribeUser(userID int32, conn net.Conn, closeChan chan bool) {
 	h.lock.Unlock()
 }
 
-// listCommand responds with a list of currently subscribed users
-func (h *Hub) listCommand(userID int32, conn net.Conn) {
+// listRequest handles request and responds with a list of currently subscribed users
+func (h *Hub) listRequest(userID int32, conn net.Conn) {
 	h.lock.RLock()
 	ids := make([]int32, 0, len(h.subscribers))
 	for id := range h.subscribers {
@@ -147,4 +152,47 @@ func (h *Hub) listCommand(userID int32, conn net.Conn) {
 	}
 	conn.Write(bytes)
 
+}
+
+// relayRequest handles relay message and sends it to all currently active users
+func (h *Hub) relayRequest(bytes []byte) {
+	// parse message
+	var request messages.RelayRequest
+	proto.Unmarshal(bytes, &request)
+	if len(request.Ids) == 0 {
+		return
+	}
+	body := request.Body
+	ids := request.Ids
+	if len(body) > messages.BodyMaxLength {
+		body = body[:messages.BodyMaxLength]
+	}
+
+	if len(ids) > messages.MaxReceivers {
+		ids = ids[:messages.MaxReceivers]
+	}
+
+	// prepare relay message
+	relay := &messages.Relay{
+		Body: body,
+	}
+	bytes, err := messages.Encode(relay, messages.MsgTypeRelay)
+	if err != nil {
+		panic(fmt.Sprintf("Relay marshalling failed, %s", err))
+	}
+
+	// send relay
+	h.lock.RLock()
+	for _, id := range ids {
+		if id == request.Id {
+			continue
+		}
+
+		if conn, ok := h.subscribers[id]; ok {
+			if conn != nil {
+				go conn.Write(bytes)
+			}
+		}
+	}
+	h.lock.RUnlock()
 }
