@@ -1,40 +1,40 @@
 package main
 
 import (
-	"bufio"
-	"io"
-	"log"
+	"fmt"
 	"net"
+	"time"
+
+	"go.uber.org/zap"
+)
+
+const (
+	port           = 8888
+	requestTimeout = 5 * time.Second
 )
 
 func main() {
-	// Init hub connection
-	conn, err := net.Dial("tcp", "localhost:8888")
+	// init logger
+	l, err := zap.NewProduction()
 	if err != nil {
-		log.Println(err)
-		return
+		panic(err)
 	}
 
-	conn.Write([]byte("guten morgen\n"))
-
-	handleIncomingMessages(conn)
-}
-
-func handleIncomingMessages(conn net.Conn) {
-	bufReader := bufio.NewReader(conn)
-
-	for {
-		// Read tokens delimited by newline
-		bytes, err := bufReader.ReadBytes('\n')
-		if err == io.EOF {
-			log.Println("connection lost")
-			break
-		}
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		log.Printf("%s", bytes)
+	// init hub connection
+	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		panic(fmt.Sprintf("Dial failed: %s", err.Error()))
 	}
+
+	// init client
+	client := NewClient(l, conn, requestTimeout)
+	err = client.Run()
+	if err != nil {
+		conn.Close()
+		panic(fmt.Sprintf("client.Run failed: %s", err.Error()))
+	}
+
+	// init command line interface
+	api := NewAPI(client)
+	api.Run()
 }

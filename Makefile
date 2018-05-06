@@ -2,6 +2,11 @@ PROJECT = unity_hw
 HUB = ${PROJECT}/hub
 CLIENT = ${PROJECT}/client
 
+.PHONY: get
+
+get:
+	dep ensure
+
 .PHONY: build
 
 build:

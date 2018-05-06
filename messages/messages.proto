@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+message Request {
+    enum Type {
+        UNKNOWN = 0;
+        IDENTITY = 1;
+        LIST = 2;
+    }
+    Type type = 1;
+    int32 id = 2;
+}
+
+message IdentityResponse {
+    int32 id = 1;
+}
+
+message ListResponse {
+    repeated int32 ids = 1;
+}
+
+message RelayRequest {
+    int32 id = 1;
+    repeated int32 ids = 2;
+    bytes body = 3;
+}
+
+message Relay {
+    bytes body = 3;
+}
