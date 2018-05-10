@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"unity_hw/messages"
+	"github.com/antonzhukov/go-tcp-messaging/messages"
 
 	"io"
 

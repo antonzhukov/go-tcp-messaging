@@ -1,4 +1,4 @@
-PROJECT = unity_hw
+PROJECT = github.com/antonzhukov/go-tcp-messaging
 HUB = ${PROJECT}/hub
 CLIENT = ${PROJECT}/client
 

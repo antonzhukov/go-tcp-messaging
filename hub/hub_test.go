@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"net"
-	"unity_hw/messages"
+	"github.com/antonzhukov/go-tcp-messaging/messages"
 
 	"reflect"
 

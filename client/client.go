@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"unity_hw/messages"
+	"github.com/antonzhukov/go-tcp-messaging/messages"
 
 	"errors"
 	"time"

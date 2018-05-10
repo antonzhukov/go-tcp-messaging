@@ -3,7 +3,7 @@ Description
 This repo contains hub and client in separate packages.
 The concept of messaging is based on protobuf format.
 The client is supplemented with simple cli api.
-
+The technical requirements are [here](task/README.md)
 
 Installation
 ============
